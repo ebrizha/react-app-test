@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
         - name: react-app-test
-          image: ebrizha/react-app-test:latest
+          image: ebrizha/react-app-test:IMAGE_TAG
+          imagePullPolicy: Always
           ports:
             - containerPort: 80

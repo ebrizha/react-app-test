@@ -37,11 +37,17 @@ jobs:
         run: |
           docker build -t ebrizha/react-app-test:${{ github.sha }} .
           docker push ebrizha/react-app-test:${{ github.sha }}
-          kubectl set image deployment/react-app-test \
-          react-app-test=ebrizha/react-app-test:${{ github.sha }}
+
+      - name: Login DockerHub
+        run: echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+      - name: Inject image tag into deployment
+        run: |
+          sed -i 's|IMAGE_TAG|${{ github.sha }}|g' _k8s/deployment.yaml
 
       - name: Deploy to Minikube
         run: |
           kubectl apply -f _k8s/deployment.yaml
           kubectl apply -f _k8s/service.yaml
           kubectl apply -f _k8s/ingress.yaml
+          kubectl rollout status deployment/react-app-test
