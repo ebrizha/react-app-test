@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-app-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: react-app-test
+  template:
+    metadata:
+      labels:
+        app: react-app-test
+    spec:
+      containers:
+        - name: react-app-test
+          image: ebrizha/react-app-test:latest
+          ports:
+            - containerPort: 80
