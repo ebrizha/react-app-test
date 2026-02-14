@@ -1,0 +1,43 @@
+name: CI/CD React App Local
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint || echo "No lint script"
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Setup Docker for Minikube
+        run: eval $(minikube -p minikube docker-env)
+
+      - name: Build Docker image
+        run: docker build -t react-app-test:latest .
+
+      - name: Deploy to Minikube
+        run: |
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml
+          kubectl apply -f ingress.yaml
