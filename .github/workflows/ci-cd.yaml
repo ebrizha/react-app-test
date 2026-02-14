@@ -44,7 +44,7 @@ jobs:
 
       - name: Inject image tag into deployment
         run: |
-          sed -i 's|IMAGE_TAG|${{ github.sha }}|g' _k8s/deployment.yaml
+          sed -i '' "s|IMAGE_TAG|${{ github.sha }}|g" _k8s/deployment.yaml
 
       - name: Deploy to Minikube
         run: |
