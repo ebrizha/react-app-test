@@ -8,7 +8,6 @@ describe('About page', () => {
 
     expect(screen.getByText(/about the console/i)).toBeInTheDocument();
     expect(screen.getByText(/modular, page-based layout/i)).toBeInTheDocument();
-    expect(screen.getByText(/src\/pages/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/src\/pages/i).length).toBeGreaterThan(0);
   });
 });
-
