@@ -34,7 +34,11 @@ jobs:
         run: eval $(minikube -p minikube docker-env)
 
       - name: Build Docker image
-        run: docker build -t react-app-test:latest .
+        run: |
+          docker build -t ebrizha/react-app-test:${{ github.sha }} .
+          docker push ebrizha/react-app-test:${{ github.sha }}
+          kubectl set image deployment/react-app-test \
+          react-app-test=ebrizha/react-app-test:${{ github.sha }}
 
       - name: Deploy to Minikube
         run: |
