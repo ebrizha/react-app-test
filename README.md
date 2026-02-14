@@ -44,3 +44,19 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+# react-app-test
+
+# Cyberpunk Reviews
+
+Single-page app with routed pages and a shared layout. Reviews are stored in localStorage.
+
+## Structure
+
+- `src/components/AppLayout.tsx`: shared layout shell and navigation.
+- `src/pages/Reviews/index.tsx`: reviews form + live feed.
+- `src/pages/About/index.tsx`: example secondary page.
+- `src/pages/NotFound/index.tsx`: fallback page.
+
+## Quick start
+
+See the scripts below.
