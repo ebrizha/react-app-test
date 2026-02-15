@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './styles.css';
-
-const LOCAL_STORAGE_KEY = 'cyberpunk-reviews';
+import { apiConfig } from '../../config/api';
 
 type Review = {
   id: string;
@@ -11,34 +10,37 @@ type Review = {
   createdAt: string;
 };
 
-const loadReviews = (): Review[] => {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.filter((item) =>
-      item &&
-      typeof item.id === 'string' &&
-      typeof item.name === 'string' &&
-      typeof item.rating === 'number' &&
-      typeof item.message === 'string' &&
-      typeof item.createdAt === 'string'
-    );
-  } catch {
-    return [];
-  }
+type ApiReview = {
+  id: number;
+  userName: string;
+  reviewText: string;
+  vote: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
+type ReviewsResponse = {
+  items: ApiReview[];
+};
+
+const mapApiReview = (review: ApiReview): Review => ({
+  id: String(review.id),
+  name: review.userName || 'Anonymous',
+  rating: review.vote,
+  message: review.reviewText,
+  createdAt: review.createdAt,
+});
+
+const getReviewsUrl = () => `${apiConfig.baseUrl}/reviews`;
+
 function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>(() => loadReviews());
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [name, setName] = useState('');
   const [rating, setRating] = useState(5);
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const averageRating = useMemo(() => {
     if (!reviews.length) {
@@ -49,28 +51,85 @@ function ReviewsPage() {
   }, [reviews]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reviews));
-  }, [reviews]);
+    let isMounted = true;
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const loadReviews = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await fetch(getReviewsUrl(), {
+          headers: {
+            accept: 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load reviews');
+        }
+
+        const data = (await response.json()) as ReviewsResponse;
+        if (isMounted) {
+          setReviews(Array.isArray(data.items) ? data.items.map(mapApiReview) : []);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          setError(loadError instanceof Error ? loadError.message : 'Failed to load reviews');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadReviews();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
 
-    if (!trimmedMessage) {
+    if (!trimmedMessage || isSubmitting) {
       return;
     }
 
-    const newReview: Review = {
-      id: `${Date.now()}`,
-      name: trimmedName || 'Anonymous',
-      rating,
-      message: trimmedMessage,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setIsSubmitting(true);
+      setError(null);
 
-    setReviews((current) => [newReview, ...current]);
-    setMessage('');
+      const response = await fetch(getReviewsUrl(), {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userName: trimmedName || 'Anonymous',
+          reviewText: trimmedMessage,
+          vote: rating,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit review');
+      }
+
+      const data = (await response.json()) as ApiReview;
+      const newReview = mapApiReview(data);
+
+      setReviews((current) => [newReview, ...current]);
+      setMessage('');
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Failed to submit review');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,7 +139,7 @@ function ReviewsPage() {
           <p className="reviews-kicker">Nightwave Reviews</p>
           <h2 className="reviews-title">Cyberpunk Feedback Terminal</h2>
           <p className="reviews-subtitle">
-            Drop your signal below. Reviews appear instantly and persist locally.
+            Drop your signal below. Reviews appear instantly and persist via API.
           </p>
         </div>
         <div className="reviews-stats">
@@ -133,15 +192,18 @@ function ReviewsPage() {
                 required
               />
             </label>
-            <button className="primary" type="submit">
-              Add review
+            <button className="primary" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Sending...' : 'Add review'}
             </button>
+            {error ? <p className="form-error">{error}</p> : null}
           </form>
         </div>
 
         <div className="panel">
           <h3 className="panel-title">Live feed</h3>
-          {reviews.length === 0 ? (
+          {isLoading ? (
+            <p className="empty">Loading reviews...</p>
+          ) : reviews.length === 0 ? (
             <p className="empty">No reviews yet. Be the first signal.</p>
           ) : (
             <div className="review-list">

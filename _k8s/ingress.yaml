@@ -15,3 +15,11 @@ spec:
                 name: react-app-test
                 port:
                   number: 80
+
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3000
