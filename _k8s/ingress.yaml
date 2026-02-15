@@ -20,6 +20,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend
+                name: nest-app-test
                 port:
                   number: 3000
