@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../../App';
@@ -42,11 +42,9 @@ describe('Reviews page', () => {
     await userEvent.type(screen.getByLabelText(/review/i), 'Solid neon vibes.');
     await userEvent.click(screen.getByRole('button', { name: /add review/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Rogue')).toBeInTheDocument();
-      expect(screen.getByText('4/5')).toBeInTheDocument();
-      expect(screen.getByText('Solid neon vibes.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Rogue')).toBeInTheDocument();
+    expect(await screen.findByText('4/5')).toBeInTheDocument();
+    expect(await screen.findByText('Solid neon vibes.')).toBeInTheDocument();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

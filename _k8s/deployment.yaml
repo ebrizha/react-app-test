@@ -20,4 +20,7 @@ spec:
             - containerPort: 80
           env:
             - name: REACT_APP_API_URL
-              value: "http://react-app-test.local/api"
+              valueFrom:
+                configMapKeyRef:
+                  name: react-app-test-config
+                  key: REACT_APP_API_URL

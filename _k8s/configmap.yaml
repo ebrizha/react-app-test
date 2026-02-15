@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: react-app-test-config
+data:
+  REACT_APP_API_URL: "http://react-app-test.local/api"
+
