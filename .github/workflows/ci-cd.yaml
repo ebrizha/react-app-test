@@ -13,6 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Checkout Helm chart
+        uses: actions/checkout@v3
+        with:
+          repository: ebrizha/env-app-test
+          path: helm-chart
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -30,26 +36,23 @@ jobs:
       - name: Build React app
         run: npm run build
 
-      - name: Setup Docker for Minikube
-        run: eval $(minikube -p minikube docker-env)
-
       - name: Login DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build Docker image
-        run: docker build -t ebrizha/react-app-test:${{ github.sha }} .
-
-      - name: Push Docker image
-        run: docker push ebrizha/react-app-test:${{ github.sha }}
-
-      - name: Inject image tag into deployment
+      - name: Build image
         run: |
-          sed -i '' "s|IMAGE_TAG|${{ github.sha }}|g" _k8s/deployment.yaml
+          docker build -t ebrizha/react-app-test:${{ github.sha }} \
+                       -t ebrizha/react-app-test:latest .
 
-      - name: Deploy to Minikube
+      - name: Push image
         run: |
-          kubectl apply -f _k8s/configmap.yaml
-          kubectl apply -f _k8s/deployment.yaml
-          kubectl apply -f _k8s/service.yaml
-          kubectl apply -f _k8s/ingress.yaml
-          kubectl rollout status deployment/react-app-test
+          docker push ebrizha/react-app-test:${{ github.sha }}
+          docker push ebrizha/react-app-test:latest
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install app ./helm-chart/app-chart \
+            --set nestApp.image.tag=${{ github.sha }} \
+            --reuse-values \
+            --rollback-on-failure \
+            --timeout 5m
